@@ -1,0 +1,10 @@
+
+venv
+__pycache__/
+*.py[cod]
+.git/
+.gitignore
+.env
+env
+House.csv
+.ipynb_checkpoints/

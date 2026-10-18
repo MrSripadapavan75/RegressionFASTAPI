@@ -1,0 +1,568 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EstateIQ | House Price Predictor</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --navy: #14213d;
+            --blue: #3157d5;
+            --bg: #f4f6fb;
+            --muted: #78839b;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--navy);
+            font-family: Inter, system-ui, sans-serif;
+        }
+
+        .navbar {
+            background: white;
+            border-bottom: 1px solid #e8ebf3;
+        }
+
+        .brand {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.7px;
+        }
+
+        .brand span { color: var(--blue); }
+
+        .hero {
+            background: linear-gradient(125deg, #14213d, #3157d5);
+            color: white;
+            border-radius: 24px;
+            padding: 34px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero p { color: #dbe4ff; }
+
+        .panel {
+            background: white;
+            border: 1px solid #e8ebf3;
+            border-radius: 20px;
+            padding: 26px;
+            height: 100%;
+            box-shadow: 0 8px 30px rgba(28, 43, 85, 0.04);
+        }
+
+        .section-label {
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .feature-label {
+            font-weight: 650;
+            font-size: 0.92rem;
+        }
+
+        .feature-value {
+            color: var(--blue);
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            background: var(--blue);
+        }
+
+        .form-range::-moz-range-thumb {
+            background: var(--blue);
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 10px 12px;
+            border-color: #e0e5f0;
+        }
+
+        .btn-predict {
+            background: var(--blue);
+            color: white;
+            border: 0;
+            border-radius: 12px;
+            padding: 15px;
+            font-weight: 750;
+        }
+
+        .btn-predict:hover {
+            background: #2444b5;
+            color: white;
+        }
+
+        .result-card {
+            background: #f0f4ff;
+            border: 1px solid #dce5ff;
+            border-radius: 16px;
+            padding: 22px;
+        }
+
+        .price {
+            color: var(--blue);
+            font-size: clamp(1.7rem, 4vw, 2.5rem);
+            font-weight: 850;
+            overflow-wrap: anywhere;
+        }
+
+        .stat-card {
+            border: 1px solid #e8ebf3;
+            border-radius: 13px;
+            padding: 15px;
+        }
+
+        .muted { color: var(--muted); }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #16a36a;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        footer {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-expand-lg">
+    <div class="container py-2">
+        <a class="navbar-brand brand" href="/">
+            Estate<span>IQ</span>
+        </a>
+
+        <div class="ms-auto small muted">
+            <span class="status-dot"></span>
+            ML Prediction Platform
+        </div>
+    </div>
+</nav>
+
+<main class="container py-4 py-lg-5">
+
+    <section class="hero mb-4 mb-lg-5">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <div class="small text-uppercase mb-3"
+                     style="letter-spacing:2px">
+                    Intelligent Property Analytics
+                </div>
+
+                <h1 class="display-6 fw-bold">
+                    Discover your property's estimated value.
+                </h1>
+
+                <p class="mt-3 mb-0">
+                    Enter six property characteristics and let our
+                    XGBoost machine learning model estimate the sale price.
+                </p>
+            </div>
+
+            <div class="col-lg-4 text-lg-end">
+                <div class="d-inline-block text-start"
+                     style="background:#ffffff18;border:1px solid #ffffff35;
+                            border-radius:16px;padding:18px">
+                    <div class="small">Prediction engine</div>
+                    <div class="fs-4 fw-bold">XGBoost</div>
+                    <div class="small">Regression model</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="row g-4">
+
+        <!-- Input panel -->
+        <div class="col-lg-7">
+            <section class="panel">
+                <div class="d-flex justify-content-between mb-4">
+                    <div>
+                        <div class="section-label">Property profile</div>
+                        <h2 class="h4 fw-bold mt-2">
+                            House specifications
+                        </h2>
+                    </div>
+
+                    <span class="badge text-bg-light align-self-start">
+                        6 features
+                    </span>
+                </div>
+
+                <form id="predictionForm">
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <label for="LotArea" class="feature-label">
+                                Lot area (square feet)
+                            </label>
+                            <span id="LotAreaValue"
+                                  class="feature-value">8000</span>
+                        </div>
+
+                        <input type="range" class="form-range"
+                               id="LotArea" min="1000" max="50000"
+                               step="100" value="8000">
+
+                        <div class="d-flex justify-content-between small muted">
+                            <span>1,000</span><span>50,000</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <label for="OverallQual" class="feature-label">
+                                Overall quality
+                            </label>
+                            <span id="OverallQualValue"
+                                  class="feature-value">7 / 10</span>
+                        </div>
+
+                        <input type="range" class="form-range"
+                               id="OverallQual" min="1" max="10"
+                               step="1" value="7">
+
+                        <div class="d-flex justify-content-between small muted">
+                            <span>Basic</span><span>Excellent</span>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="YearBuilt"
+                                   class="feature-label mb-2">
+                                Year built
+                            </label>
+
+                            <input type="number" class="form-control"
+                                   id="YearBuilt" min="1800" max="2026"
+                                   value="2005" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="GarageCars"
+                                   class="feature-label mb-2">
+                                Garage capacity (cars)
+                            </label>
+
+                            <select class="form-select form-control"
+                                    id="GarageCars">
+                                <option value="0">No garage</option>
+                                <option value="1">1 car</option>
+                                <option value="2" selected>2 cars</option>
+                                <option value="3">3 cars</option>
+                                <option value="4">4 cars</option>
+                                <option value="5">5 cars</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <label for="TotalBsmtSF" class="feature-label">
+                                Total basement area (sq ft)
+                            </label>
+                            <span id="TotalBsmtSFValue"
+                                  class="feature-value">1000</span>
+                        </div>
+
+                        <input type="range" class="form-range"
+                               id="TotalBsmtSF" min="0" max="3000"
+                               step="25" value="1000">
+
+                        <div class="d-flex justify-content-between small muted">
+                            <span>0</span><span>3,000</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between mb-2">
+                            <label for="1stFlrSF" class="feature-label">
+                                First floor area (sq ft)
+                            </label>
+                            <span id="firstFlrValue"
+                                  class="feature-value">1200</span>
+                        </div>
+
+                        <input type="range" class="form-range"
+                               id="1stFlrSF" min="300" max="3000"
+                               step="25" value="1200">
+
+                        <div class="d-flex justify-content-between small muted">
+                            <span>300</span><span>3,000</span>
+                        </div>
+                    </div>
+
+                    <div id="errorMessage"
+                         class="alert alert-danger d-none"
+                         role="alert"></div>
+
+                    <button type="submit"
+                            id="predictButton"
+                            class="btn btn-predict w-100">
+                        Predict House Price &rarr;
+                    </button>
+
+                    <p class="small muted text-center mt-3 mb-0">
+                        The model uses the six selected features.
+                    </p>
+                </form>
+            </section>
+        </div>
+
+        <!-- Results panel -->
+        <div class="col-lg-5">
+            <section class="panel">
+                <div class="section-label">Prediction dashboard</div>
+                <h2 class="h4 fw-bold mt-2 mb-4">Your estimate</h2>
+
+                <div class="result-card mb-4">
+                    <div class="small muted mb-2">
+                        Predicted sale price
+                    </div>
+
+                    <div id="predictedPrice" class="price">
+                        &mdash;
+                    </div>
+
+                    <div id="resultMessage" class="small muted mt-2">
+                        Enter the property details and predict to see results.
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="small muted">Lot area</div>
+                            <div id="resultLot" class="fs-5 fw-bold">—</div>
+                            <div class="small muted">sq ft</div>
+                        </div>
+                    </div>
+
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="small muted">Quality score</div>
+                            <div id="resultQuality" class="fs-5 fw-bold">—</div>
+                            <div class="small muted">out of 10</div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="h6 fw-bold mb-3">
+                    Property feature overview
+                </h3>
+
+                <canvas id="featureChart"
+                        role="img"
+                        aria-label="Chart of the entered house features"
+                        height="210"></canvas>
+
+                <div class="alert alert-light border mt-4 mb-0 small">
+                    <strong>Note:</strong> This is a model estimate, not
+                    a formal property valuation. The output uses the
+                    same price units as the training dataset.
+                </div>
+            </section>
+        </div>
+
+    </div>
+
+    <footer class="text-center mt-5">
+        EstateIQ &middot; Powered by FastAPI and XGBoost
+    </footer>
+</main>
+
+<script>
+    const numberFormat = new Intl.NumberFormat("en-US");
+
+    const rangeFields = [
+        ["LotArea", "LotAreaValue"],
+        ["OverallQual", "OverallQualValue"],
+        ["TotalBsmtSF", "TotalBsmtSFValue"],
+        ["1stFlrSF", "firstFlrValue"]
+    ];
+
+    rangeFields.forEach(([inputId, outputId]) => {
+        const input = document.getElementById(inputId);
+        const output = document.getElementById(outputId);
+
+        function updateValue() {
+            let value = numberFormat.format(Number(input.value));
+
+            if (inputId === "OverallQual") {
+                value += " / 10";
+            }
+
+            output.textContent = value;
+        }
+
+        input.addEventListener("input", updateValue);
+        updateValue();
+    });
+
+    let featureChart = null;
+
+    function getPayload() {
+        return {
+            LotArea: Number(document.getElementById("LotArea").value),
+            OverallQual: Number(
+                document.getElementById("OverallQual").value
+            ),
+            YearBuilt: Number(
+                document.getElementById("YearBuilt").value
+            ),
+            TotalBsmtSF: Number(
+                document.getElementById("TotalBsmtSF").value
+            ),
+            "1stFlrSF": Number(
+                document.getElementById("1stFlrSF").value
+            ),
+            GarageCars: Number(
+                document.getElementById("GarageCars").value
+            )
+        };
+    }
+
+    function updateChart(data) {
+        const values = [
+            data.LotArea,
+            data.OverallQual,
+            data.YearBuilt,
+            data.TotalBsmtSF,
+            data["1stFlrSF"],
+            data.GarageCars
+        ];
+
+        const labels = [
+            "Lot area",
+            "Quality",
+            "Year built",
+            "Basement",
+            "First floor",
+            "Garage cars"
+        ];
+
+        if (featureChart) {
+            featureChart.destroy();
+        }
+
+        featureChart = new Chart(
+            document.getElementById("featureChart"),
+            {
+                type: "bar",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: "Entered value",
+                        data: values,
+                        backgroundColor: [
+                            "#3157d5", "#6e88e8", "#9aabef",
+                            "#3157d5", "#6e88e8", "#9aabef"
+                        ],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+    document.getElementById("predictionForm")
+        .addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const button = document.getElementById("predictButton");
+        const error = document.getElementById("errorMessage");
+        const price = document.getElementById("predictedPrice");
+        const message = document.getElementById("resultMessage");
+
+        const payload = getPayload();
+
+        error.classList.add("d-none");
+
+        if (!Number.isFinite(payload.YearBuilt) ||
+            payload.YearBuilt < 1800 ||
+            payload.YearBuilt > 2026) {
+            error.textContent = "Enter a valid year built.";
+            error.classList.remove("d-none");
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent = "Calculating prediction...";
+        message.textContent = "Sending property details to the model.";
+
+        try {
+            const response = await fetch("/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    result.detail || "Unable to predict the price."
+                );
+            }
+
+            price.textContent =
+                numberFormat.format(result.predicted_price);
+
+            message.textContent =
+                "Prediction completed successfully.";
+
+            document.getElementById("resultLot").textContent =
+                numberFormat.format(payload.LotArea);
+
+            document.getElementById("resultQuality").textContent =
+                payload.OverallQual + " / 10";
+
+            updateChart(payload);
+
+        } catch (err) {
+            error.textContent = err.message;
+            error.classList.remove("d-none");
+            message.textContent = "Prediction could not be completed.";
+        } finally {
+            button.disabled = false;
+            button.textContent = "Predict House Price →";
+        }
+    });
+</script>
+
+</body>
+</html>
